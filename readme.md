@@ -62,6 +62,7 @@ How to manage the database:
 
 ```bash
 # Run all pending migrations
+cd backend
 uv run alembic upgrade head
 ```
 
@@ -69,6 +70,7 @@ After modifying models in `app/models.py`, create a new migration:
 
 ```bash
 # Auto-generate migration from model changes
+cd backend
 uv run alembic revision --autogenerate -m "Description of changes"
 
 # Review the generated migration file in alembic/versions/
