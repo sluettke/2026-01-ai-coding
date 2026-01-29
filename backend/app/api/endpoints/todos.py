@@ -1,7 +1,7 @@
 from http import HTTPStatus
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -42,14 +42,35 @@ class TodoItemResponse(BaseModel):
 @router.get("/todos")
 def get_todos(
     db: DbDependency,
-    assigned_to_id: Annotated[int | None, Query(description="Filter by assigned person ID")] = None,
+    request: Request,
+    assigned_to_id: Annotated[str | None, Query()] = None,
 ) -> list[TodoItemResponse]:
-    """Get all todo items, optionally filtered by assignment."""
+    """Get all todo items, optionally filtered by assignment.
+
+    Three filter states:
+    - No assigned_to_id parameter → return all todos
+    - assigned_to_id="" (empty/null) → return only unassigned todos
+    - assigned_to_id=<number> → return todos assigned to that person
+    """
     stmt = select(TodoItem)
 
-    # Apply filter if assigned_to_id is provided
-    if assigned_to_id is not None:
-        stmt = stmt.where(TodoItem.assigned_to_id == assigned_to_id)
+    # Check if assigned_to_id was actually provided in the query parameters
+    if "assigned_to_id" in request.query_params:
+        # Convert empty string to None (for "unassigned" filter)
+        if assigned_to_id == "" or assigned_to_id is None:
+            # Filter for unassigned todos (assigned_to_id IS NULL)
+            stmt = stmt.where(TodoItem.assigned_to_id.is_(None))
+        else:
+            # Parse as integer and filter for todos assigned to specific person
+            try:
+                person_id = int(assigned_to_id)
+                stmt = stmt.where(TodoItem.assigned_to_id == person_id)
+            except ValueError:
+                raise HTTPException(
+                    status_code=HTTPStatus.BAD_REQUEST,
+                    detail="Invalid assigned_to_id: must be a number or empty for unassigned",
+                ) from None
+    # else: no filter parameter provided, return all todos
 
     stmt = stmt.order_by(TodoItem.created_at.desc())
     todos = db.execute(stmt).scalars().all()

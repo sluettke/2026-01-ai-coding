@@ -31,6 +31,11 @@ export interface paths {
         /**
          * Get Todos
          * @description Get all todo items, optionally filtered by assignment.
+         *
+         *     Three filter states:
+         *     - No assigned_to_id parameter → return all todos
+         *     - assigned_to_id="" (empty/null) → return only unassigned todos
+         *     - assigned_to_id=<number> → return todos assigned to that person
          */
         get: operations["get_todos_api_todos_get"];
         put?: never;
@@ -271,8 +276,7 @@ export interface operations {
     get_todos_api_todos_get: {
         parameters: {
             query?: {
-                /** @description Filter by assigned person ID */
-                assigned_to_id?: number | null;
+                assigned_to_id?: string | null;
             };
             header?: never;
             path?: never;

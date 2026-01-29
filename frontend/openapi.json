@@ -32,7 +32,7 @@
           "todos"
         ],
         "summary": "Get Todos",
-        "description": "Get all todo items, optionally filtered by assignment.",
+        "description": "Get all todo items, optionally filtered by assignment.\n\nThree filter states:\n- No assigned_to_id parameter → return all todos\n- assigned_to_id=\"\" (empty/null) → return only unassigned todos\n- assigned_to_id=<number> → return todos assigned to that person",
         "operationId": "get_todos_api_todos_get",
         "parameters": [
           {
@@ -42,16 +42,14 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "integer"
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Filter by assigned person ID",
               "title": "Assigned To Id"
-            },
-            "description": "Filter by assigned person ID"
+            }
           }
         ],
         "responses": {

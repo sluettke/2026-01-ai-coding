@@ -23,7 +23,7 @@ export function TodoPage() {
   const [people, setPeople] = useState<Person[]>([]);
   const [newTodoTitle, setNewTodoTitle] = useState('');
   const [newTodoAssignedTo, setNewTodoAssignedTo] = useState<number | null>(null);
-  const [filterPersonId, setFilterPersonId] = useState<number | null>(null);
+  const [filterPersonId, setFilterPersonId] = useState<number | null | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,13 +36,21 @@ export function TodoPage() {
     }
   };
 
-  const fetchTodos = async (assignedToId: number | null = null) => {
+  const fetchTodos = async (assignedToId: number | null | undefined = undefined) => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fetchError } = await client.GET('/api/todos', {
-        params: assignedToId !== null ? { query: { assigned_to_id: assignedToId } } : {},
-      });
+      // Convert filter values: undefined -> no param, null -> empty string, number -> string
+      let params: { query?: { assigned_to_id?: string } } = {};
+      if (assignedToId !== undefined) {
+        params = {
+          query: {
+            assigned_to_id: assignedToId === null ? '' : String(assignedToId),
+          },
+        };
+      }
+
+      const { data, error: fetchError } = await client.GET('/api/todos', { params });
       if (fetchError) {
         setError('Failed to fetch todos');
         return;
@@ -168,12 +176,21 @@ export function TodoPage() {
         <label htmlFor="filter">Filter by person:</label>
         <select
           id="filter"
-          value={filterPersonId ?? ''}
-          onChange={(e) => setFilterPersonId(e.target.value ? Number(e.target.value) : null)}
+          value={filterPersonId === null ? 'unassigned' : filterPersonId === undefined ? '' : filterPersonId}
+          onChange={(e) => {
+            const value = e.target.value;
+            if (value === '') {
+              setFilterPersonId(undefined);
+            } else if (value === 'unassigned') {
+              setFilterPersonId(null);
+            } else {
+              setFilterPersonId(Number(value));
+            }
+          }}
           className={styles.filterSelect}
         >
           <option value="">All todos</option>
-          <option value="0">Unassigned</option>
+          <option value="unassigned">Unassigned</option>
           {people.map((person) => (
             <option key={person.id} value={person.id}>
               {person.name}
